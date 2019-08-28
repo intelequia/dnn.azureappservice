@@ -185,7 +185,7 @@ namespace DotNetNuke.Azure.AppService
 
         private void CheckMaxFailures(ServerInfo server)
         {             
-            var maxFailures = HostController.Instance.GetInteger("WebServer_MaxPingFailures", 3 * ServerController.GetEnabledServers().Count());
+            var maxFailures = HostController.Instance.GetInteger("WebServer_MaxPingFailures", 5) * ServerController.GetEnabledServers().Count();
             if (server.PingFailureCount >= maxFailures)
             {
                 server.Enabled = false;
