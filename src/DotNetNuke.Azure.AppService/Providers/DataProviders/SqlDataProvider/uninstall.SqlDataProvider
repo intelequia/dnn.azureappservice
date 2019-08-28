@@ -1,0 +1,15 @@
+﻿DELETE FROM {databaseOwner}[{objectQualifier}HostSettings]
+WHERE SettingName='WebServer_ServerRequestAdapter'
+
+DELETE FROM {databaseOwner}[{objectQualifier}HostSettings]
+WHERE SettingName='WebServer_MaxPingFailures'
+
+DELETE FROM {databaseOwner}[{objectQualifier}HostSettings]
+WHERE SettingName='WebServer_MaxDisabledServersLifeInDays'
+
+DELETE FROM {databaseOwner}[{objectQualifier}Schedule] 
+WHERE TypeFullName = 'DotNetNuke.Azure.AppService.AppServiceServerChecker, DotNetNuke.Azure.AppService'
+
+UPDATE Schedule
+SET Servers=NULL
+

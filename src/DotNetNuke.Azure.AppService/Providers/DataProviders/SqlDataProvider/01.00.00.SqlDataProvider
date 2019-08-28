@@ -1,0 +1,90 @@
+﻿IF NOT EXISTS (SELECT * FROM {databaseOwner}[{objectQualifier}HostSettings] WHERE SettingName='WebServer_ServerRequestAdapter')
+BEGIN
+	INSERT INTO {databaseOwner}[{objectQualifier}HostSettings]
+			   ([SettingName]
+			   ,[SettingValue]
+			   ,[SettingIsSecure]
+			   ,[CreatedByUserID]
+			   ,[CreatedOnDate]
+			   ,[LastModifiedByUserID]
+			   ,[LastModifiedOnDate])
+		 VALUES
+			   ('WebServer_ServerRequestAdapter'
+			   ,'DotNetNuke.Azure.AppService.AppServiceServerAdapter, DotNetNuke.Azure.AppService'
+			   ,0
+			   ,-1
+			   ,GETUTCDATE()
+			   ,-1
+			   ,GETUTCDATE())
+END
+
+IF NOT EXISTS (SELECT * FROM {databaseOwner}[{objectQualifier}HostSettings] WHERE SettingName='WebServer_MaxPingFailures')
+BEGIN
+	INSERT INTO {databaseOwner}[{objectQualifier}HostSettings]
+			   ([SettingName]
+			   ,[SettingValue]
+			   ,[SettingIsSecure]
+			   ,[CreatedByUserID]
+			   ,[CreatedOnDate]
+			   ,[LastModifiedByUserID]
+			   ,[LastModifiedOnDate])
+		 VALUES
+			   ('WebServer_MaxPingFailures'
+			   ,'5'
+			   ,0
+			   ,-1
+			   ,GETUTCDATE()
+			   ,-1
+			   ,GETUTCDATE())
+END
+
+IF NOT EXISTS (SELECT * FROM {databaseOwner}[{objectQualifier}HostSettings] WHERE SettingName='WebServer_MaxDisabledServersLifeInDays')
+BEGIN
+	INSERT INTO {databaseOwner}[{objectQualifier}HostSettings]
+			   ([SettingName]
+			   ,[SettingValue]
+			   ,[SettingIsSecure]
+			   ,[CreatedByUserID]
+			   ,[CreatedOnDate]
+			   ,[LastModifiedByUserID]
+			   ,[LastModifiedOnDate])
+		 VALUES
+			   ('WebServer_MaxDisabledServersLifeInDays'
+			   ,'30'
+			   ,0
+			   ,-1
+			   ,GETUTCDATE()
+			   ,-1
+			   ,GETUTCDATE())
+END
+
+IF NOT EXISTS (SELECT * FROM {databaseOwner}[{objectQualifier}Schedule] WHERE TypeFullName = 'DotNetNuke.Azure.AppService.AppServiceServerChecker, DotNetNuke.Azure.AppService')
+BEGIN
+	INSERT INTO {databaseOwner}[{objectQualifier}Schedule]
+           ([TypeFullName]
+           ,[TimeLapse]
+           ,[TimeLapseMeasurement]
+           ,[RetryTimeLapse]
+           ,[RetryTimeLapseMeasurement]
+           ,[RetainHistoryNum]
+           ,[AttachToEvent]
+           ,[CatchUpEnabled]
+           ,[Enabled]
+           ,[ObjectDependencies]
+           ,[Servers]
+           ,[CreatedByUserID]
+           ,[CreatedOnDate]
+           ,[LastModifiedByUserID]
+           ,[LastModifiedOnDate]
+           ,[FriendlyName])
+     VALUES
+           ('DotNetNuke.Azure.AppService.AppServiceServerChecker, DotNetNuke.Azure.AppService',
+		   5, 'm',
+		   1, 'm',
+		   10,
+		   '', 'false', 'true',
+		   '', NULL,
+		   NULL, NULL,
+		   NULL, NULL,
+		   'Azure AppService Adapter')
+END

@@ -1,0 +1,62 @@
+﻿<dotnetnuke type="Package" version="5.0">
+  <packages>
+    <package name="AzureAppServiceAdapter" type="Library" version="01.00.00">
+      <friendlyName>DNN Azure App Service adapter</friendlyName>
+      <description>
+        The DNN Azure App Service adapter is an adapter for DNN Platform to adapt scheduled tasks and other DNN utilities to Azure App Service.
+      </description>
+      <iconFile>~/DesktopModules/AzureAppService/Images/AppService.png</iconFile>
+      <owner>
+        <name>Intelequia</name>
+        <organization>Intelequia Software Solutions</organization>
+        <url>http://intelequia.com</url>
+        <email>info@intelequia.com</email>
+      </owner>
+      <license src="AzureAppServiceLicense.txt" />
+      <releaseNotes src="AzureAppServiceReleaseNotes.txt"/>
+      <azureCompatible>true</azureCompatible>
+      <dependencies>
+        <dependency type="CoreVersion">09.03.00</dependency>
+      </dependencies>
+
+      <components>
+        <component type="ResourceFile">
+          <resourceFiles>
+            <basePath>DesktopModules/AzureAppService</basePath>
+            <resourceFile>
+              <name>Resources.zip</name>
+            </resourceFile>
+          </resourceFiles>
+        </component>
+        
+        <!-- Database scripts -->
+        <component type="Script">
+          <scripts>
+            <basePath>DesktopModules/AzureAppService</basePath>
+            <script type="Install">
+              <path>Providers\DataProviders\SqlDataProvider</path>
+              <name>01.00.00.SqlDataProvider</name>
+              <version>01.00.00</version>
+            </script>
+
+            <script type="UnInstall" >
+              <path>Providers\DataProviders\SqlDataProvider</path>
+              <name>uninstall.SqlDataProvider</name>
+              <version>01.00.00</version>
+            </script>
+          </scripts>
+        </component>
+
+        <component type="Assembly">
+          <assemblies>
+            <assembly>
+              <path>bin</path>
+              <name>DotNetNuke.Azure.AppService.dll</name>
+            </assembly>
+          </assemblies>
+        </component>
+
+      </components>
+    </package>
+  </packages>
+</dotnetnuke>
