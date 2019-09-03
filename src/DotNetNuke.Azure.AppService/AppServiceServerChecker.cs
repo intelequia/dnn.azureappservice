@@ -74,7 +74,7 @@ namespace DotNetNuke.Azure.AppService
             // Try pinging the other servers by doing a webrequest to keepalive.aspx
             var servers = ServerController.GetEnabledServers()
                 .Where(x => x.ServerName != Globals.ServerName 
-                            && x.IISAppName != Globals.IISAppName
+                            && x.IISAppName == Globals.IISAppName
                             && !string.IsNullOrEmpty(x.Url)
                             && !string.IsNullOrEmpty(x.UniqueId));
 
@@ -184,8 +184,8 @@ namespace DotNetNuke.Azure.AppService
         }
 
         private void CheckMaxFailures(ServerInfo server)
-        {             
-            var maxFailures = HostController.Instance.GetInteger("WebServer_MaxPingFailures", 5) * ServerController.GetEnabledServers().Count();
+        {
+            var maxFailures = HostController.Instance.GetInteger("WebServer_MaxPingFailures", 5);// * ServerController.GetEnabledServers().Count();
             if (server.PingFailureCount >= maxFailures)
             {
                 server.Enabled = false;
@@ -211,12 +211,14 @@ namespace DotNetNuke.Azure.AppService
 
                 foreach (var item in scheduleItems)
                 {
-                    if (item.TypeFullName == "DotNetNuke.Azure.AppService.AppServiceServerChecker, DotNetNuke.Azure.AppService"
-                        && item.Servers != Null.NullString)
+                    if (item.TypeFullName == "DotNetNuke.Azure.AppService.AppServiceServerChecker, DotNetNuke.Azure.AppService")
                     {
-                        item.Servers = Null.NullString;
-                        SchedulingProvider.Instance().UpdateSchedule(item);
-                        movedSchedules.Add(item.FriendlyName);
+                        if (item.Servers != Null.NullString)
+                        {
+                            item.Servers = Null.NullString;
+                            SchedulingProvider.Instance().UpdateSchedule(item);
+                            movedSchedules.Add(item.FriendlyName);
+                        }
                     }
                     else if (item.Servers != $",{serverName},")
                     {
