@@ -28,7 +28,35 @@
             </resourceFile>
           </resourceFiles>
         </component>
-        
+
+        <component type="Config">
+          <config>
+            <configFile>web.config</configFile>
+            <install>
+              <configuration>
+                <nodes>
+                  <node path="/configuration/dotnetnuke/caching/providers" action="update" key="name" collision="overwrite">
+                    <add name="ServiceBusCachingProvider"
+                         type="DotNetNuke.Azure.AppService.Providers.CachingProviders.ServiceBusCachingProvider, DotNetNuke.Azure.AppService"
+                         providerPath="~\Providers\CachingProviders\ServiceBusCachingProvider\" serviceBusPoolSize="20" topicName="dnntopic" subscriptionName="dnnsubs" />
+                  </node>
+                  <node path="/configuration/connectionStrings" action="update" key="name" collision="ignore">
+                    <add name="ServiceBusCachingProvider" connectionString="" providerName="DotNetNuke.Providers.ServiceBusCachingProvider" />
+                  </node>
+                </nodes>
+              </configuration>
+            </install>
+            <uninstall>
+              <configuration>
+                <nodes>
+                  <node path="/configuration/dotnetnuke/caching/providers/add[@name='ServiceBusCachingProvider']" action="remove" />
+                  <node path="/configuration/connectionStrings/add[@name='ServiceBusCachingProvider']" action="remove" />
+                </nodes>
+              </configuration>
+            </uninstall>
+          </config>
+        </component>
+
         <!-- Database scripts -->
         <component type="Script">
           <scripts>
