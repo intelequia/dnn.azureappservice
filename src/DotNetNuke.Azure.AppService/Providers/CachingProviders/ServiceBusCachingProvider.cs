@@ -21,10 +21,13 @@
 
 #endregion
 
+using DotNetNuke.Common;
 using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
 using DotNetNuke.Services.Cache;
 using Newtonsoft.Json;
+using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -73,6 +76,17 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
         {
             // On installation and upgrades, don't send cache syncs to avoid installation failures
             if (HttpContext.Current != null && IsUpgradeRequest(HttpContext.Current.Request))
+            {
+                return;
+            }
+
+            // Check if there is more than servers than self
+            var self = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+            if (ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
+                                                                        && s.IISAppName == self.IISAppName)
+                                                                        && (s.ServerGroup == self.ServerGroup || string.IsNullOrEmpty(self.ServerGroup))
+                                                                        && !string.IsNullOrEmpty(s.Url))
+                                                    .Count() == 0)
             {
                 return;
             }
