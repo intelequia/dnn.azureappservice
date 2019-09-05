@@ -27,6 +27,7 @@ using DotNetNuke.Instrumentation;
 using DotNetNuke.Services.Cache;
 using Newtonsoft.Json;
 using System;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -81,14 +82,17 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             }
 
             // Check if there is more than servers than self
-            var self = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
-            if (ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
-                                                                        && s.IISAppName == self.IISAppName)
-                                                                        && (s.ServerGroup == self.ServerGroup || string.IsNullOrEmpty(self.ServerGroup))
-                                                                        && !string.IsNullOrEmpty(s.Url))
-                                                    .Count() == 0)
+            if (!bool.TryParse(ConfigurationManager.AppSettings["ServiceBusCachingProvider.Debug"], out var isDebug) && !isDebug)
             {
-                return;
+                var self = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+                if (ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
+                                                                            && s.IISAppName == self.IISAppName)
+                                                                            && (s.ServerGroup == self.ServerGroup || string.IsNullOrEmpty(self.ServerGroup))
+                                                                            && !string.IsNullOrEmpty(s.Url))
+                                                        .Count() == 0)
+                {
+                    return;
+                }
             }
 
             var client = ServiceBus.GetTopicClientFromPool();
@@ -99,14 +103,14 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                 Message = message,
                 Data = data
             };
-            var messageBody = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(messageData));
+            var messageBody = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(messageData)).ConfigureAwait(false);
             if (client == null)
             {
                 Logger.Warn($"Service bus disabled: {messageBody}");
             }
             else
             {
-                await client.SendAsync(new Microsoft.Azure.ServiceBus.Message(Encoding.UTF8.GetBytes(messageBody)));
+                await client.SendAsync(new Microsoft.Azure.ServiceBus.Message(Encoding.UTF8.GetBytes(messageBody))).ConfigureAwait(false);
             }
         }
 

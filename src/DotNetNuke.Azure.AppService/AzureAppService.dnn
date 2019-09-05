@@ -38,7 +38,7 @@
                   <node path="/configuration/dotnetnuke/caching/providers" action="update" key="name" collision="overwrite">
                     <add name="ServiceBusCachingProvider"
                          type="DotNetNuke.Azure.AppService.Providers.CachingProviders.ServiceBusCachingProvider, DotNetNuke.Azure.AppService"
-                         providerPath="~\Providers\CachingProviders\ServiceBusCachingProvider\" serviceBusPoolSize="20" topicName="dnntopic" subscriptionName="dnnsubs" />
+                         providerPath="~\Providers\CachingProviders\ServiceBusCachingProvider\" serviceBusPoolSize="20" topicName="dnntopic" />
                   </node>
                   <node path="/configuration/connectionStrings" action="update" key="name" collision="ignore">
                     <add name="ServiceBusCachingProvider" connectionString="" providerName="DotNetNuke.Providers.ServiceBusCachingProvider" />
@@ -81,6 +81,20 @@
               <path>bin</path>
               <name>DotNetNuke.Azure.AppService.dll</name>
             </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>Microsoft.Azure.ServiceBus.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>Microsoft.Azure.Amqp.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.Diagnostics.DiagnosticSource.dll</name>
+              <version>4.3.0.1</version>
+            </assembly>
+            
           </assemblies>
         </component>
 

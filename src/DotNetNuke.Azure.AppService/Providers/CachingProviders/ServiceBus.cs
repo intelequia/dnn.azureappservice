@@ -21,9 +21,12 @@
 
 #endregion
 
+using DotNetNuke.Common;
 using DotNetNuke.Common.Utilities;
+using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Management;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -47,6 +50,19 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                 return _maxPoolSize;
             }
         }
+
+        internal static int _maxConcurrentCalls = -1;
+        internal static int MaxConcurrentCalls
+        {
+            get
+            {
+                if (_maxConcurrentCalls == -1)
+                {
+                    _maxConcurrentCalls = int.Parse(GetProviderConfigAttribute("maxConcurrentCalls", "5"));
+                }
+                return _maxConcurrentCalls;
+            }
+        }
         internal static string _topicName = string.Empty;
         internal static string TopicName
         {
@@ -56,19 +72,6 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                     _topicName = GetProviderConfigAttribute("topicName", "dnntopic");
                 }
                 return _topicName;
-            }
-        }
-
-        internal static string _subscriptionName = string.Empty;
-        internal static string SubscriptionName
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(_subscriptionName))
-                {
-                    _subscriptionName = GetProviderConfigAttribute("subscriptionName", "dnnsubs");
-                }
-                return _subscriptionName;
             }
         }
 
@@ -106,9 +109,10 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                         {
                             EntityPath = TopicName
                         };
+                    var retryPolicy = new RetryExponential(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), 10);
                     for (var index = 0; index < MaxPoolSize; index++)
                     {
-                        var topicClient = new TopicClient(connectionStringBuilder);
+                        var topicClient = new TopicClient(connectionStringBuilder, retryPolicy);
                         _topicClientPool.Add(topicClient);
                     }
                 }
@@ -151,12 +155,38 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             get {
                 if (_subscriptionClient == null)
                 {
-                    _subscriptionClient = new SubscriptionClient(ServiceBusConnectionString, TopicName, SubscriptionName);
+                    // Check if subscription exists
+                    CreateServerSubscriptions();
+
+                    var currentServer = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+                    var retryPolicy = new RetryExponential(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), 10);
+                    _subscriptionClient = new SubscriptionClient(ServiceBusConnectionString, TopicName, $"server-{currentServer.ServerID}", ReceiveMode.ReceiveAndDelete, retryPolicy);
                 }
                 return _subscriptionClient;
             }
         }
 
+        private static void CreateServerSubscriptions()
+        {
+            Logger.Info("Verifying all servers subscription existence");
+            var servers = ServerController.GetEnabledServers();
+            var client = new ManagementClient(ServiceBusConnectionString);
+            foreach (var server in servers)
+            {
+                try
+                {
+                    if (!client.SubscriptionExistsAsync(TopicName, $"server-{server.ServerID}").Result)
+                    {
+                        Logger.Info($"Creating topic subscription 'server-{server.ServerID}' for server '{server.ServerName}'");
+                        client.CreateSubscriptionAsync(new SubscriptionDescription(TopicName, $"server-{server.ServerID}"));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Error creating topic subscription", ex);
+                }
+            }
+        }
     }
 
 }
