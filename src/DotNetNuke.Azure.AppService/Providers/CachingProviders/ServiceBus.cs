@@ -171,6 +171,26 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             Logger.Info("Verifying all servers subscription existence");
             var servers = ServerController.GetEnabledServers();
             var client = new ManagementClient(ServiceBusConnectionString);
+
+            // Delete old server subscriptions from already deleted servers
+            var subscriptions = client.GetSubscriptionsAsync(TopicName).Result;
+            foreach (var subscription in subscriptions)
+            {
+                if (!servers.Any(s => $"server-{s.ServerID}" == subscription.SubscriptionName))
+                {
+                    try
+                    {
+                        Logger.Info($"Deleting subscription '{subscription.SubscriptionName}' because server doesn't exist");
+                        client.DeleteSubscriptionAsync(TopicName, $"{subscription.SubscriptionName}").RunSynchronously();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Error deleting topic subscription", ex);
+                    }
+                }
+            }
+
+            // Create server subscriptions if they don't exist
             foreach (var server in servers)
             {
                 try
@@ -185,7 +205,7 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                 {
                     Logger.Error("Error creating topic subscription", ex);
                 }
-            }
+            }         
         }
     }
 

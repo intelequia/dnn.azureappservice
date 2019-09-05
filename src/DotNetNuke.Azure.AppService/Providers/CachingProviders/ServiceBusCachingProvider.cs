@@ -110,6 +110,7 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             }
             else
             {
+                Logger.Debug($"Sending message: {messageBody}");
                 await client.SendAsync(new Microsoft.Azure.ServiceBus.Message(Encoding.UTF8.GetBytes(messageBody))).ConfigureAwait(false);
             }
         }
