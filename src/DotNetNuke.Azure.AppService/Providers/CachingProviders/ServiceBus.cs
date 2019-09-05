@@ -169,7 +169,7 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
         private static void CreateServerSubscriptions()
         {
             Logger.Info("Verifying all servers subscription existence");
-            var servers = ServerController.GetEnabledServers();
+            var servers = ServerController.GetServers();
             var client = new ManagementClient(ServiceBusConnectionString);
 
             // Delete old server subscriptions from already deleted servers
@@ -191,7 +191,8 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             }
 
             // Create server subscriptions if they don't exist
-            foreach (var server in servers)
+            var enabledServers = servers.Where(x => x.Enabled);
+            foreach (var server in enabledServers)
             {
                 try
                 {
