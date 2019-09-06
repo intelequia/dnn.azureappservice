@@ -26,11 +26,13 @@ using DotNetNuke.Common.Utilities;
 using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Azure.ServiceBus.Core;
 using Microsoft.Azure.ServiceBus.Management;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
 {
@@ -155,10 +157,8 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             get {
                 if (_subscriptionClient == null)
                 {
-                    // Check if subscription exists
-                    CreateServerSubscriptions();
-
                     var currentServer = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+                    RefreshServerSubscriptions(currentServer);
                     var retryPolicy = new RetryExponential(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), 10);
                     _subscriptionClient = new SubscriptionClient(ServiceBusConnectionString, TopicName, $"server-{currentServer.ServerID}", ReceiveMode.ReceiveAndDelete, retryPolicy);
                 }
@@ -166,30 +166,11 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             }
         }
 
-        private static void CreateServerSubscriptions()
+        private static void RefreshServerSubscriptions(ServerInfo currentServer)
         {
             Logger.Info("Verifying all servers subscription existence");
             var servers = ServerController.GetServers();
             var client = new ManagementClient(ServiceBusConnectionString);
-
-            // Delete old server subscriptions from already deleted servers
-            var subscriptions = client.GetSubscriptionsAsync(TopicName).Result;
-            foreach (var subscription in subscriptions)
-            {
-                if (!servers.Any(s => $"server-{s.ServerID}" == subscription.SubscriptionName))
-                {
-                    try
-                    {
-                        Logger.Info($"Deleting subscription '{subscription.SubscriptionName}' because server doesn't exist");
-                        client.DeleteSubscriptionAsync(TopicName, $"{subscription.SubscriptionName}").RunSynchronously();
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error("Error deleting topic subscription", ex);
-                    }
-                }
-            }
-
             // Create server subscriptions if they don't exist
             var enabledServers = servers.Where(x => x.Enabled);
             foreach (var server in enabledServers)
@@ -199,15 +180,61 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                     if (!client.SubscriptionExistsAsync(TopicName, $"server-{server.ServerID}").Result)
                     {
                         Logger.Info($"Creating topic subscription 'server-{server.ServerID}' for server '{server.ServerName}'");
-                        client.CreateSubscriptionAsync(new SubscriptionDescription(TopicName, $"server-{server.ServerID}"));
+                        client.CreateSubscriptionAsync(new SubscriptionDescription(TopicName, $"server-{server.ServerID}")
+                        {
+                            AutoDeleteOnIdle = TimeSpan.FromDays(int.Parse(GetProviderConfigAttribute("autoDeleteOnIdleDays", "15"))),
+                            DefaultMessageTimeToLive = TimeSpan.FromSeconds(int.Parse(GetProviderConfigAttribute("defaultMessageTimeToLiveInSeconds", "10"))),
+                            MaxDeliveryCount = int.Parse(GetProviderConfigAttribute("maxDeliveryCount", "10")),
+                            EnableBatchedOperations = true,
+                            EnableDeadLetteringOnFilterEvaluationExceptions = true,
+                            UserMetadata = ServerController.GetServerName(server)
+                        }).RunSynchronously();
+                    }
+                    else
+                    {
+                        if (server.ServerID == currentServer.ServerID)
+                        {
+                            PurgeSubscriptionAsync($"server-{server.ServerID}").GetAwaiter().GetResult();
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     Logger.Error("Error creating topic subscription", ex);
                 }
-            }         
+            }
         }
+
+        private static async Task PurgeSubscriptionAsync(string subscriptionName)
+        {
+            try
+            {
+                Logger.Info($"Purging subscription '{subscriptionName}'");
+                var messageReceiver = new MessageReceiver(
+                    ServiceBusConnectionString,
+                    EntityNameHelper.FormatSubscriptionPath(TopicName, subscriptionName),
+                    ReceiveMode.ReceiveAndDelete);
+
+                int batchSize = 100;
+                var operationTimeout = TimeSpan.FromSeconds(3);
+
+                do
+                {
+                    var messages = await messageReceiver.ReceiveAsync(batchSize, operationTimeout).ConfigureAwait(false);
+                    if (messages == null || messages.Count == 0) // Returns null if no message is found
+                    {
+                        break;
+                    }
+                }
+                while (true);
+                await messageReceiver.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error purging subscription {subscriptionName}", ex);
+            }
+        }
+
     }
 
 }
