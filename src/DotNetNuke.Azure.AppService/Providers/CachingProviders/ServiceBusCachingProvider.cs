@@ -26,7 +26,6 @@ using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
 using DotNetNuke.Services.Cache;
 using Newtonsoft.Json;
-using System;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -38,6 +37,20 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
     public class ServiceBusCachingProvider: CachingProvider
     {
         private static readonly ILog Logger = LoggerSource.Instance.GetLogger(typeof(ServiceBusCachingProvider));
+        private const string CacheConfigFilePath = "~/DesktopModules/AzureAppService/Caching.config";
+
+        private CachingConfig _cachingConfig;
+        private CachingConfig CachingConfig
+        {
+            get
+            {
+                if (_cachingConfig == null)
+                {
+                    _cachingConfig = CachingConfig.GetCacheConfig(HttpContext.Current.Server.MapPath(CacheConfigFilePath));
+                }
+                return _cachingConfig;
+            }
+        }
 
         public override void Clear(string type, string data)
         {
@@ -78,6 +91,12 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             // On installation and upgrades, don't send cache syncs to avoid installation failures
             if (HttpContext.Current != null && IsUpgradeRequest(HttpContext.Current.Request))
             {
+                return;
+            }
+
+            if (CachingConfig != null && CachingConfig.CacheExclusions.Any(x => x.Message == message && x.Data == data))
+            {
+                Logger.Debug($"Message excluded by caching exclusions (message: {message}; data: {data}");
                 return;
             }
 

@@ -188,7 +188,7 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                             EnableBatchedOperations = true,
                             EnableDeadLetteringOnFilterEvaluationExceptions = true,
                             UserMetadata = ServerController.GetServerName(server)
-                        }).RunSynchronously();
+                        }).GetAwaiter().GetResult();
                     }
                     else
                     {

@@ -129,6 +129,7 @@
     <Compile Include="AppServiceServerAdapter.cs" />
     <Compile Include="AppServiceServerChecker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Providers\CachingProviders\CachingConfig.cs" />
     <Compile Include="Providers\CachingProviders\ServiceBusCachingSubscriber.cs" />
     <Compile Include="Providers\CachingProviders\ServiceBus.cs" />
     <Compile Include="Providers\CachingProviders\ServiceBusCachingProvider.cs" />
@@ -136,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Caching.config" />
     <None Include="packages.config" />
     <None Include="Providers\DataProviders\SqlDataProvider\uninstall.SqlDataProvider" />
     <None Include="Providers\DataProviders\SqlDataProvider\01.00.00.SqlDataProvider" />

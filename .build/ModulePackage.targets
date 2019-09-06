@@ -21,6 +21,7 @@
     <ItemGroup>
       <InstallInclude Include="**\*.txt;**\*.ascx;**\*.css"  Exclude="**\obj\**;**\_ReSharper*\**;packages\**;**\node_modules\**;**\admin\personaBar\**" />
       <InstallInclude Include="**\images\*.png" />
+      <InstallInclude Include="**\Caching.config" />
     </ItemGroup>
 
 
