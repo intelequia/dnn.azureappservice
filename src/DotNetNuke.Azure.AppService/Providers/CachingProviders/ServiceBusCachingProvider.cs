@@ -52,6 +52,19 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             }
         }
 
+        public override bool IsWebFarm()
+        {
+            // Notify possible 3rd party module dependencies that this caching provider is supporting "WebFarm" mode.
+            // Better implementation would be to return the following, but could cause undesired effects on scale out/in operations
+            //var self = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+            //return ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
+            //                                                                            && s.IISAppName == self.IISAppName)
+            //                                                                            && (s.ServerGroup == self.ServerGroup || string.IsNullOrEmpty(self.ServerGroup))
+            //                                                                            && !string.IsNullOrEmpty(s.Url))
+            //                                                        .Count() > 0;
+            return true;
+        }
+
         public override void Clear(string type, string data)
         {
             base.ClearCacheInternal(type, data, true);
