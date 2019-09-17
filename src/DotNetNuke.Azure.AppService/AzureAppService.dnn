@@ -92,9 +92,7 @@
             <assembly>
               <path>bin</path>
               <name>System.Diagnostics.DiagnosticSource.dll</name>
-              <version>4.3.0.1</version>
             </assembly>
-            
           </assemblies>
         </component>
 
