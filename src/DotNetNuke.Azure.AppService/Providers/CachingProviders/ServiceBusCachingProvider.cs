@@ -39,8 +39,8 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
         private static readonly ILog Logger = LoggerSource.Instance.GetLogger(typeof(ServiceBusCachingProvider));
         private const string CacheConfigFilePath = "~/DesktopModules/AzureAppService/Caching.config";
 
-        private CachingConfig _cachingConfig;
-        private CachingConfig CachingConfig
+        private static CachingConfig _cachingConfig;
+        private static CachingConfig CachingConfig
         {
             get
             {
