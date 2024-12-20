@@ -116,8 +116,8 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             // Check if there is more than servers than self
             if (!bool.TryParse(ConfigurationManager.AppSettings["ServiceBusCachingProvider.Debug"], out var isDebug) && !isDebug)
             {
-                var self = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
-                if (ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
+                var self = ServerController.GetServers().FirstOrDefault(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+                if (self == null || ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
                                                                             && s.IISAppName == self.IISAppName)
                                                                             && (s.ServerGroup == self.ServerGroup || string.IsNullOrEmpty(self.ServerGroup))
                                                                             && !string.IsNullOrEmpty(s.Url))
