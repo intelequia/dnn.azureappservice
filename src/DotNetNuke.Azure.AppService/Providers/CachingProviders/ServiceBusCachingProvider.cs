@@ -31,6 +31,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using System.Windows.Forms.VisualStyles;
 
 namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
 {
@@ -117,6 +118,11 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             if (!bool.TryParse(ConfigurationManager.AppSettings["ServiceBusCachingProvider.Debug"], out var isDebug) && !isDebug)
             {
                 var self = ServerController.GetServers().FirstOrDefault(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+                if (self == null) 
+                {
+                    // This can happen if the server is not registered in the database for some reason 
+                    ServerController.ClearCachedServers();
+                }                
                 if (self == null || ServerController.GetEnabledServers().Where(s => !(s.ServerName == self.ServerName
                                                                             && s.IISAppName == self.IISAppName)
                                                                             && (s.ServerGroup == self.ServerGroup || string.IsNullOrEmpty(self.ServerGroup))
