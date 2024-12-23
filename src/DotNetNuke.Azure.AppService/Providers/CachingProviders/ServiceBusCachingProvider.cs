@@ -31,7 +31,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using System.Windows.Forms.VisualStyles;
 
 namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
 {
