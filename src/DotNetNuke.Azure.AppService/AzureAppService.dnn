@@ -1,6 +1,6 @@
 ﻿<dotnetnuke type="Package" version="5.0">
   <packages>
-    <package name="AzureAppServiceAdapter" type="Library" version="01.00.01">
+    <package name="AzureAppServiceAdapter" type="Library" version="01.00.02">
       <friendlyName>DNN Azure App Service adapter</friendlyName>
       <description>
         The DNN Azure App Service adapter is an adapter for DNN Platform to adapt scheduled tasks and other DNN utilities to Azure App Service.
