@@ -10,6 +10,9 @@
 ## Overview
 The DNN Azure AppService Adapter is library for DNN Platform to integrate different AppService features into DNN Platform, such as scheduled tasks and other features. 
 
+## Known issues
+* When installing a newer version of the module, the service bus topicName attribute under the "caching" node in the web.config file is being overwritten with the "dnntopic" text. After reinstalling, please manually update your web.config with your previous topic name.
+
 <a name="building"></a>
 # Building the solution
 ### Requirements
