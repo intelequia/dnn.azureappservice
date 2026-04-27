@@ -21,14 +21,12 @@
 
 #endregion
 
+using Azure.Messaging.ServiceBus;
 using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
 using DotNetNuke.Services.Cache;
 using DotNetNuke.Web.Api;
-using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
@@ -36,6 +34,7 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
     public class ServiceBusCachingSubscriber : IServiceRouteMapper
     {
         private static readonly ILog Logger = LoggerSource.Instance.GetLogger(typeof(ServiceBusCachingSubscriber));
+        private static ServiceBusProcessor _processor;
 
         public void RegisterRoutes(IMapRoute mapRouteManager)
         {
@@ -47,28 +46,24 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                 return;
             }
 
-            // Configure the message handler options in terms of exception handling, number of concurrent messages to deliver, etc.
-            var messageHandlerOptions = new MessageHandlerOptions(ExceptionReceivedHandler)
+            _processor = ServiceBus.CreateProcessorForCurrentServer();
+            if (_processor == null)
             {
-                // Maximum number of concurrent calls to the callback ProcessMessagesAsync(), set to 1 for simplicity.
-                // Set it according to how many messages the application wants to process in parallel.
-                MaxConcurrentCalls = ServiceBus.MaxConcurrentCalls,
+                Logger.Warn("Could not create ServiceBus processor. ServiceBusCachingProvider subscriber not initialized");
+                return;
+            }
 
-                // Indicates whether the message pump should automatically complete the messages after returning from user callback.
-                // False below indicates the complete operation is handled by the user callback as in ProcessMessagesAsync().
-                AutoComplete = true
-            };
-
-            // Register the function that processes messages.
-            ServiceBus.SubscriptionClient.RegisterMessageHandler(ProcessMessagesAsync, messageHandlerOptions);
+            _processor.ProcessMessageAsync += ProcessMessagesAsync;
+            _processor.ProcessErrorAsync += ExceptionReceivedHandler;
+            _processor.StartProcessingAsync().GetAwaiter().GetResult();
             Logger.Info("ServiceBusCachingProvider subscriber initialized and listening");
 
         }
 
-        static async Task ProcessMessagesAsync(Message message, CancellationToken token)
+        static async Task ProcessMessagesAsync(ProcessMessageEventArgs args)
         {
-            var messageBody = Encoding.UTF8.GetString(message.Body);
-            Logger.Info($"Received message: SequenceNumber:{message.SystemProperties.SequenceNumber} Body{messageBody}");
+            var messageBody = args.Message.Body.ToString();
+            Logger.Info($"Received message: SequenceNumber:{args.Message.SequenceNumber} Body:{messageBody}");
             var eventMessage = JsonConvert.DeserializeObject<CachingMessage>(messageBody);
             ProcessEventInternal(eventMessage);
             await Task.CompletedTask;
@@ -88,11 +83,10 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
         }
 
         // Use this handler to examine the exceptions received on the message pump.
-        static Task ExceptionReceivedHandler(ExceptionReceivedEventArgs exceptionReceivedEventArgs)
+        static Task ExceptionReceivedHandler(ProcessErrorEventArgs args)
         {
-            Logger.Error($"Message handler encountered an exception {exceptionReceivedEventArgs.Exception}.");
-            var context = exceptionReceivedEventArgs.ExceptionReceivedContext;
-            Logger.Error($"Exception context for troubleshooting (Endpoint: {context.Endpoint}; Entity Path: {context.EntityPath}; Entity Path: {context.EntityPath}");
+            Logger.Error($"Message handler encountered an exception {args.Exception}.");
+            Logger.Error($"Exception context for troubleshooting (ErrorSource: {args.ErrorSource}; Entity Path: {args.EntityPath})");
             return Task.CompletedTask;
         }
     }

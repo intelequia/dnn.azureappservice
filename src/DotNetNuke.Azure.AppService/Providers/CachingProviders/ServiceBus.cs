@@ -21,15 +21,13 @@
 
 #endregion
 
+using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus.Administration;
 using DotNetNuke.Common;
 using DotNetNuke.Common.Utilities;
 using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
-using Microsoft.Azure.ServiceBus;
-using Microsoft.Azure.ServiceBus.Core;
-using Microsoft.Azure.ServiceBus.Management;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
@@ -98,95 +96,82 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             return defaultValue;
         }
 
-        internal static Lazy<List<TopicClient>> LazyTopicClientPool = new Lazy<List<TopicClient>>(() =>
+        internal static Lazy<ServiceBusClient> LazyClient = new Lazy<ServiceBusClient>(() =>
         {
-            Logger.Info("Initializing ServiceBusCachingProvider topic client pool");
-            var _topicClientPool = new List<TopicClient>();
+            Logger.Info("Initializing ServiceBusCachingProvider client");
             try
             {
                 if (!string.IsNullOrEmpty(ServiceBusConnectionString))
                 {
-                    var connectionStringBuilder =
-                        new ServiceBusConnectionStringBuilder(ServiceBusConnectionString)
-                        {
-                            EntityPath = TopicName
-                        };
-                    var retryPolicy = new RetryExponential(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), 10);
-                    for (var index = 0; index < MaxPoolSize; index++)
+                    var client = new ServiceBusClient(ServiceBusConnectionString, new ServiceBusClientOptions
                     {
-                        var topicClient = new TopicClient(connectionStringBuilder, retryPolicy);
-                        _topicClientPool.Add(topicClient);
-                    }
+                        RetryOptions = new ServiceBusRetryOptions
+                        {
+                            Mode = ServiceBusRetryMode.Exponential,
+                            Delay = TimeSpan.FromSeconds(1),
+                            MaxDelay = TimeSpan.FromSeconds(30),
+                            MaxRetries = 10
+                        }
+                    });
+                    Logger.Info("ServiceBus client successfully initialized");
+                    return client;
                 }
-                if (_topicClientPool.Count > 0)
-                {
-                    Logger.Info($"Topic client pool successfully initialzed (Pool size: {_topicClientPool.Count})");
-                }
-                else
-                {
-                    Logger.Warn("Service Bus is disabled. Check application settings");
-                }
+                Logger.Warn("Service Bus is disabled. Check application settings");
             }
             catch (Exception ex)
             {
-                Logger.Error("Error initializing the service bus topic client pool", ex);
-
+                Logger.Error("Error initializing the service bus client", ex);
             }
-            return _topicClientPool;
+            return null;
         });
 
-        internal static List<TopicClient> TopicClientPool
+        internal static ServiceBusClient Client => LazyClient.Value;
+
+        internal static Lazy<ServiceBusSender> LazySender = new Lazy<ServiceBusSender>(() =>
         {
-            get
+            if (Client != null)
             {
-                return LazyTopicClientPool.Value;
+                var sender = Client.CreateSender(TopicName);
+                Logger.Info($"ServiceBus sender successfully initialized (Topic: {TopicName})");
+                return sender;
             }
-        }
+            return null;
+        });
 
-        internal static TopicClient GetTopicClientFromPool()
-        {
-            if (string.IsNullOrEmpty(ServiceBusConnectionString) || string.IsNullOrEmpty(TopicName))
-                return null;
-            var index = new Random().Next(MaxPoolSize - 1);
-            return TopicClientPool[index];
-        }
+        internal static ServiceBusSender Sender => LazySender.Value;
 
-        internal static SubscriptionClient _subscriptionClient;
-        internal static SubscriptionClient SubscriptionClient
+        internal static ServiceBusProcessor CreateProcessorForCurrentServer()
         {
-            get {
-                if (_subscriptionClient == null)
-                {
-                    var currentServer = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
-                    RefreshServerSubscriptions(currentServer);
-                    var retryPolicy = new RetryExponential(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), 10);
-                    _subscriptionClient = new SubscriptionClient(ServiceBusConnectionString, TopicName, $"server-{currentServer.ServerID}", ReceiveMode.ReceiveAndDelete, retryPolicy);
-                }
-                return _subscriptionClient;
-            }
+            if (Client == null) return null;
+            var currentServer = ServerController.GetServers().Single(s => s.ServerName == Globals.ServerName && s.IISAppName == Globals.IISAppName);
+            RefreshServerSubscriptions(currentServer);
+            return Client.CreateProcessor(TopicName, $"server-{currentServer.ServerID}", new ServiceBusProcessorOptions
+            {
+                MaxConcurrentCalls = MaxConcurrentCalls,
+                ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete
+            });
         }
 
         private static void RefreshServerSubscriptions(ServerInfo currentServer)
         {
             Logger.Info("Verifying all servers subscription existence");
             var servers = ServerController.GetServers();
-            var client = new ManagementClient(ServiceBusConnectionString);
+            var adminClient = new ServiceBusAdministrationClient(ServiceBusConnectionString);
             // Create server subscriptions if they don't exist
             var enabledServers = servers.Where(x => x.Enabled);
             foreach (var server in enabledServers)
             {
                 try
                 {
-                    if (!client.SubscriptionExistsAsync(TopicName, $"server-{server.ServerID}").Result)
+                    if (!adminClient.SubscriptionExistsAsync(TopicName, $"server-{server.ServerID}").GetAwaiter().GetResult())
                     {
                         Logger.Info($"Creating topic subscription 'server-{server.ServerID}' for server '{server.ServerName}'");
-                        client.CreateSubscriptionAsync(new SubscriptionDescription(TopicName, $"server-{server.ServerID}")
+                        adminClient.CreateSubscriptionAsync(new CreateSubscriptionOptions(TopicName, $"server-{server.ServerID}")
                         {
                             AutoDeleteOnIdle = TimeSpan.FromDays(int.Parse(GetProviderConfigAttribute("autoDeleteOnIdleDays", "15"))),
                             DefaultMessageTimeToLive = TimeSpan.FromSeconds(int.Parse(GetProviderConfigAttribute("defaultMessageTimeToLiveInSeconds", "10"))),
                             MaxDeliveryCount = int.Parse(GetProviderConfigAttribute("maxDeliveryCount", "10")),
                             EnableBatchedOperations = true,
-                            EnableDeadLetteringOnFilterEvaluationExceptions = true,
                             UserMetadata = ServerController.GetServerName(server)
                         }).GetAwaiter().GetResult();
                     }
@@ -210,24 +195,24 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
             try
             {
                 Logger.Info($"Purging subscription '{subscriptionName}'");
-                var messageReceiver = new MessageReceiver(
-                    ServiceBusConnectionString,
-                    EntityNameHelper.FormatSubscriptionPath(TopicName, subscriptionName),
-                    ReceiveMode.ReceiveAndDelete);
+                var receiver = Client.CreateReceiver(TopicName, subscriptionName, new ServiceBusReceiverOptions
+                {
+                    ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete
+                });
 
                 int batchSize = 100;
                 var operationTimeout = TimeSpan.FromSeconds(3);
 
                 do
                 {
-                    var messages = await messageReceiver.ReceiveAsync(batchSize, operationTimeout).ConfigureAwait(false);
-                    if (messages == null || messages.Count == 0) // Returns null if no message is found
+                    var messages = await receiver.ReceiveMessagesAsync(batchSize, operationTimeout).ConfigureAwait(false);
+                    if (messages == null || messages.Count == 0)
                     {
                         break;
                     }
                 }
                 while (true);
-                await messageReceiver.CloseAsync();
+                await receiver.CloseAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

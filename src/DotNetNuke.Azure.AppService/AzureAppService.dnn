@@ -1,6 +1,6 @@
 ﻿<dotnetnuke type="Package" version="5.0">
   <packages>
-    <package name="AzureAppServiceAdapter" type="Library" version="01.00.02">
+    <package name="AzureAppServiceAdapter" type="Library" version="01.00.03">
       <friendlyName>DNN Azure App Service adapter</friendlyName>
       <description>
         The DNN Azure App Service adapter is an adapter for DNN Platform to adapt scheduled tasks and other DNN utilities to Azure App Service.
@@ -43,6 +43,73 @@
                   <node path="/configuration/connectionStrings" action="update" key="name" collision="ignore">
                     <add name="ServiceBusCachingProvider" connectionString="" providerName="DotNetNuke.Providers.ServiceBusCachingProvider" />
                   </node>
+                  <!-- Binding redirects for Azure.Messaging.ServiceBus and dependencies -->
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='Azure.Core']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="Azure.Core" publicKeyToken="92742159e12e44c8" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-1.38.0.0" newVersion="1.38.0.0" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='Azure.Core.Amqp']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="Azure.Core.Amqp" publicKeyToken="92742159e12e44c8" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-1.3.0.0" newVersion="1.3.0.0" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='Microsoft.Azure.Amqp']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="Microsoft.Azure.Amqp" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-2.4.0.0" newVersion="2.4.0.0" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Diagnostics.DiagnosticSource']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Diagnostics.DiagnosticSource" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-6.0.0.1" newVersion="6.0.0.1" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Runtime.CompilerServices.Unsafe']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Runtime.CompilerServices.Unsafe" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-6.0.0.0" newVersion="6.0.0.0" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Memory']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Memory" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-4.0.1.1" newVersion="4.0.1.1" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Text.Json']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Text.Json" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-4.0.1.2" newVersion="4.0.1.2" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Text.Encodings.Web']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Text.Encodings.Web" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-4.0.5.1" newVersion="4.0.5.1" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='Microsoft.Bcl.AsyncInterfaces']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="Microsoft.Bcl.AsyncInterfaces" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-1.0.0.0" newVersion="1.0.0.0" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Threading.Tasks.Extensions']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Threading.Tasks.Extensions" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-4.2.0.1" newVersion="4.2.0.1" />
+                    </dependentAssembly>
+                  </node>
+                  <node path="/configuration/runtime/ab:assemblyBinding" action="add" targetpath="/configuration/runtime/ab:assemblyBinding/ab:dependentAssembly[ab:assemblyIdentity/@name='System.Buffers']" nameSpace="urn:schemas-microsoft-com:asm.v1" nameSpacePrefix="ab" collision="overwrite">
+                    <dependentAssembly xmlns="urn:schemas-microsoft-com:asm.v1">
+                      <assemblyIdentity name="System.Buffers" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
+                      <bindingRedirect oldVersion="0.0.0.0-4.0.3.0" newVersion="4.0.3.0" />
+                    </dependentAssembly>
+                  </node>
                 </nodes>
               </configuration>
             </install>
@@ -83,7 +150,15 @@
             </assembly>
             <assembly>
               <path>bin</path>
-              <name>Microsoft.Azure.ServiceBus.dll</name>
+              <name>Azure.Core.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>Azure.Core.Amqp.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>Azure.Messaging.ServiceBus.dll</name>
             </assembly>
             <assembly>
               <path>bin</path>
@@ -91,7 +166,35 @@
             </assembly>
             <assembly>
               <path>bin</path>
+              <name>Microsoft.Bcl.AsyncInterfaces.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.ClientModel.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
               <name>System.Diagnostics.DiagnosticSource.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.Memory.Data.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.Runtime.CompilerServices.Unsafe.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.Text.Encodings.Web.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.Text.Json.dll</name>
+            </assembly>
+            <assembly>
+              <path>bin</path>
+              <name>System.Threading.Tasks.Extensions.dll</name>
             </assembly>
           </assemblies>
         </component>
