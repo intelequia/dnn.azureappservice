@@ -21,6 +21,7 @@
 
 #endregion
 
+using Azure.Messaging.ServiceBus;
 using DotNetNuke.Common;
 using DotNetNuke.Entities.Host;
 using DotNetNuke.Instrumentation;
@@ -28,7 +29,6 @@ using DotNetNuke.Services.Cache;
 using Newtonsoft.Json;
 using System.Configuration;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -132,7 +132,7 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                 }
             }
 
-            var client = ServiceBus.GetTopicClientFromPool();
+            var sender = ServiceBus.Sender;
             var serverName = ServerController.GetExecutingServerName();
             var messageData = new CachingMessage
             {
@@ -141,14 +141,14 @@ namespace DotNetNuke.Azure.AppService.Providers.CachingProviders
                 Data = data
             };
             var messageBody = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(messageData)).ConfigureAwait(false);
-            if (client == null)
+            if (sender == null)
             {
                 Logger.Warn($"Service bus disabled: {messageBody}");
             }
             else
             {
                 Logger.Debug($"Sending message: {messageBody}");
-                await client.SendAsync(new Microsoft.Azure.ServiceBus.Message(Encoding.UTF8.GetBytes(messageBody))).ConfigureAwait(false);
+                await sender.SendMessageAsync(new ServiceBusMessage(messageBody)).ConfigureAwait(false);
             }
         }
 
